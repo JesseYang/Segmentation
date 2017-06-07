@@ -3,10 +3,10 @@ from easydict import EasyDict as edict
 
 cfg = edict()
 
-cfg.name = 'sealion'
+cfg.name = 'fox'
 
 # class_num should include background
-cfg.class_num = 5
+cfg.class_num = 10
 
 cfg.dilations = [1, 2, 4, 8, 16, 1, 2, 4, 8, 16]
 cfg.channels = [32, 32, 32, 32, 64, 64, 64, 64, 64]
