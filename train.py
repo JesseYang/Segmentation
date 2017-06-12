@@ -63,6 +63,7 @@ class Model(ModelDesc):
                     l = tf.nn.relu(l)
 
         output = tf.identity(l, name="NETWORK_OUTPUT")
+        softmax_output = tf.nn.softmax(output, name="softmax_output")
 
 
         # value for the elements in label before preprocess ranges from 0 to class_num:

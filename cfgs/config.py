@@ -1,1 +1,1 @@
-from .config_sealion import cfg
+from .config_fox import cfg
