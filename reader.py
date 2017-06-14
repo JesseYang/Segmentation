@@ -18,6 +18,8 @@ import logging
 from tensorpack import *
 from cfgs.config import cfg
 
+from morph import warp
+
 def get_imglist(fname):
     with open(fname) as f:
         content = f.readlines()
@@ -25,7 +27,7 @@ def get_imglist(fname):
     return content
 
 # def read_data(train_or_test, affine_trans=False, flip=False):
-def read_data(img_path, label_path, affine_trans=False, hflip=False, scale_x=1.0, scale_y=1.0):
+def read_data(img_path, label_path, affine_trans=False, hflip=False, scale_x=1.0, scale_y=1.0, warp_ratio=0):
     img = misc.imread(img_path, mode='RGB')
     f = open(label_path, "rb")
     binary_data = f.read()
@@ -57,6 +59,9 @@ def read_data(img_path, label_path, affine_trans=False, hflip=False, scale_x=1.0
         img = cv2.flip(img, flipCode=1)
         label = cv2.flip(label, flipCode=1)
 
+    if warp_ratio > 0 and np.random.rand() <= warp_ratio:
+        img, label = warp(img, label)
+
     h, w, c = img.shape
     label = np.reshape(label, (h * w))
 
@@ -71,6 +76,7 @@ class Data(RNGDataFlow):
         self.hflip = hflip
         self.scale_x = 1.0
         self.scale_y = 1.0
+        self.warp_ratio = 0.5
         fname_list = [fname_list] if type(fname_list) is not list else fname_list
 
         self.imglist = []
@@ -91,7 +97,7 @@ class Data(RNGDataFlow):
         for k in idxs:
             img_path = self.imglist[k]
             label_path = img_path.replace('image', 'label').replace('png', 'dat')
-            yield read_data(img_path, label_path, self.affine_trans, self.hflip, self.scale_x, self.scale_y)
+            yield read_data(img_path, label_path, self.affine_trans, self.hflip, self.scale_x, self.scale_y, self.warp_ratio)
 
 if __name__ == '__main__':
     ds = Data('train')
