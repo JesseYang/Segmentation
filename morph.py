@@ -6,14 +6,15 @@ from scipy import misc
 import pdb
 
 
-def applyAffineTransform(src, srcTri, dstTri, size) :
+def applyAffineTransform(src, srcTri, dstTri, size, interpolation=cv2.INTER_NEAREST):
     # Given a pair of triangles, find the affine transform.
     warpMat = cv2.getAffineTransform( np.float32(srcTri), np.float32(dstTri) )
     # Apply the Affine Transform just found to the src image
-    dst = cv2.warpAffine( src, warpMat, (size[0], size[1]), None, flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT_101 )
+    # dst = cv2.warpAffine( src, warpMat, (size[0], size[1]), None, flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT_101 )
+    dst = cv2.warpAffine( src, warpMat, (size[0], size[1]), None, flags=interpolation, borderMode=cv2.BORDER_REFLECT_101 )
     return dst
 
-def morphTriangle(img1, img2, t1, t2):
+def morphTriangle(img1, img2, t1, t2, interpolation=cv2.INTER_NEAREST):
     # transform triangle t1 in img1 to triangle t2 in img2
 
     # Find bounding rectangle for each triangle
@@ -39,7 +40,7 @@ def morphTriangle(img1, img2, t1, t2):
     imgRect = img1[r1[1]:r1[1] + r1[3], r1[0]:r1[0] + r1[2]]
 
     size = (r2[2], r2[3])
-    warpImage = applyAffineTransform(imgRect, t1Rect, t2Rect, size)
+    warpImage = applyAffineTransform(imgRect, t1Rect, t2Rect, size, interpolation)
 
     # Copy triangular region of the rectangular patch to the output image
     img2[r2[1]:r2[1]+r2[3], r2[0]:r2[0]+r2[2]] = img2[r2[1]:r2[1]+r2[3],
@@ -69,7 +70,7 @@ def get_warp(pts_list_before, height, width, warp_type, var_x, var_y):
     return pts_list_after
 
 
-def warp(img, label, ver_pad=0, hor_pad=0):
+def warp(img, label, ver_pad=0.1, hor_pad=0.1):
 
 
     if len(img.shape) == 3:
@@ -180,11 +181,15 @@ def warp(img, label, ver_pad=0, hor_pad=0):
                      pts_list_after[tri[1]],
                      pts_list_after[tri[2]]]
         # Morph one triangle at a time.
-        morphTriangle(img, imgMorph, tri_before, tri_after)
-        morphTriangle(label, labelMorph, tri_before, tri_after)
+        morphTriangle(img, imgMorph, tri_before, tri_after, interpolation=cv2.INTER_LINEAR)
+        morphTriangle(label, labelMorph, tri_before, tri_after, interpolation=cv2.INTER_NEAREST)
 
-    imgMorph = imgMorph[height_pad:-height_pad, width_pad:-width_pad]
-    labelMorph = labelMorph[height_pad:-height_pad, width_pad:-width_pad]
+    if height_pad > 0:
+        imgMorph = imgMorph[height_pad:-height_pad]
+        labelMorph = labelMorph[height_pad:-height_pad]
+    if width_pad > 0:
+        imgMorph = imgMorph[:, width_pad:-width_pad]
+        labelMorph = labelMorph[:, width_pad:-width_pad]
 
     return [imgMorph, labelMorph]
 

@@ -112,7 +112,7 @@ class Model(ModelDesc):
 
 def get_data(train_or_test):
     isTrain = train_or_test == 'train'
-    ds = Data(train_or_test, affine_trans=isTrain, hflip=isTrain)
+    ds = Data(train_or_test, affine_trans=isTrain, hflip=isTrain, warp=isTrain)
     if isTrain:
         augmentors = [
             imgaug.RandomOrderAug(

@@ -26,7 +26,6 @@ def get_imglist(fname):
     content = [ele.strip() for ele in content]
     return content
 
-# def read_data(train_or_test, affine_trans=False, flip=False):
 def read_data(img_path, label_path, affine_trans=False, hflip=False, scale_x=1.0, scale_y=1.0, warp_ratio=0):
     img = misc.imread(img_path, mode='RGB')
     f = open(label_path, "rb")
@@ -40,6 +39,9 @@ def read_data(img_path, label_path, affine_trans=False, hflip=False, scale_x=1.0
     # affine
     h, w, c = img.shape
     label = np.reshape(label, (h, w))
+
+    if warp_ratio > 0 and np.random.rand() <= warp_ratio:
+        img, label = warp(img, label)
 
     if affine_trans:
         # scale_x = (np.random.uniform() - 0.5) / 4 + 1
@@ -59,16 +61,13 @@ def read_data(img_path, label_path, affine_trans=False, hflip=False, scale_x=1.0
         img = cv2.flip(img, flipCode=1)
         label = cv2.flip(label, flipCode=1)
 
-    if warp_ratio > 0 and np.random.rand() <= warp_ratio:
-        img, label = warp(img, label)
-
     h, w, c = img.shape
     label = np.reshape(label, (h * w))
 
     return [img, label]
 
 class Data(RNGDataFlow):
-    def __init__(self, train_or_test, shuffle=True, affine_trans=True, hflip=True):
+    def __init__(self, train_or_test, shuffle=True, affine_trans=True, hflip=True, warp=True):
         assert train_or_test in ['train', 'test']
         fname_list = cfg.train_list if train_or_test == "train" else cfg.test_list
         self.train_or_test = train_or_test
@@ -76,7 +75,7 @@ class Data(RNGDataFlow):
         self.hflip = hflip
         self.scale_x = 1.0
         self.scale_y = 1.0
-        self.warp_ratio = 0.5
+        self.warp_ratio = 0.5 if warp == True else 0
         fname_list = [fname_list] if type(fname_list) is not list else fname_list
 
         self.imglist = []

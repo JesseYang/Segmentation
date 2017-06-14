@@ -1,1 +1,1 @@
-from .config_sealion import cfg
+from .config_koala import cfg
