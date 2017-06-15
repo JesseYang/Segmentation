@@ -148,7 +148,8 @@ def get_config(ds_train, ds_test):
             ScheduledHyperParamSetter('learning_rate',
                                       [(1, 1e-1),
                                        (50, 3e-2),
-                                       (100, 1e-2)])
+                                       (100, 1e-2)]),
+            HumanHyperParamSetter('learning_rate'),
         ],
         model=Model(),
         max_epoch=150,
