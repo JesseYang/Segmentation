@@ -43,6 +43,9 @@ def read_data(img_path, label_path, affine_trans=False, hflip=False, scale_x=1.0
     if warp_ratio > 0 and np.random.rand() <= warp_ratio:
         img, label = warp(img, label)
 
+
+    # img = img[:, :, np.random.permutation(img.shape[2])]
+
     if affine_trans:
         # scale_x = (np.random.uniform() - 0.5) / 4 + 1
         # scale_y = (np.random.uniform() - 0.5) / 4 + 1

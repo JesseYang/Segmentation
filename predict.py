@@ -94,7 +94,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', help='path to the model file', required=True)
     parser.add_argument('--input', help='path to the input image', required=True)
-    parser.add_argument('--output', help='path to the output image')
+    parser.add_argument('--output', help='path to the output image/dir')
     parser.add_argument('--crf', action='store_true')
 
 
