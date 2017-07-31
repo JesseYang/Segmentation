@@ -194,7 +194,6 @@ def warp(img, label, ver_pad=0.1, hor_pad=0.1):
     return [imgMorph, labelMorph]
 
 if __name__ == "__main__":
-
     img_path = "data_fox/images/00173ead-c4be-4cc7-9a70-2301879dddc8.png"
     label_path = img_path.replace('image', 'label').replace('png', 'dat')
 

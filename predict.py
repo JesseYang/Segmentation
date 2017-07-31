@@ -15,17 +15,36 @@ from tensorpack import *
 
 from train import Model
 from cfgs.config import cfg
+from img_helper import imgSegmentation, imgMerge
 
-def predict_one(img_path, predict_func, output_path, crf):
-    img = misc.imread(img_path)
+def newPredict_one(img_path, predict_func, output_path, crf):
+    img_name = img_path.split('/')
+    img_name = img_name[:img_path.index('.jpg')]
+    img = misc.imread(img_path, mode = 'L')
+    imgs = imgSegmentation(img)
+    h,w,_,__ = imgs.shape
+    prediction_all = []
+    os.mkdir('%s/%s/'%(output_path, img_name))
+    for i in range(h):
+        prediction_line = []
+        for j in range(w):
+            prediction = predict_one(imgs[i][j], predict_func, output_path, crf)
+            misc.imsave('%s/%s/%d-%d.jpg'%(output_path, img_name,i,j),prediction)
+            prediction_line.append(prediction)
+        prediction_all.append(prediction_line)
+    prediction = imgMerge(np.array(prediction_all))
+    misc.imsave('%s/%s/总.jpg'%(output_path, img_name),prediction)
+
+def predict_one(img, predict_func, output_path, crf):
+    img = np.expand_dims(img, axis=3)
     batch_img = np.expand_dims(img, axis=0)
     predictions = predict_func([batch_img])[0]
 
     predictions = np.reshape(predictions, (img.shape[0], img.shape[1], cfg.class_num))
 
-    # conditional random field
+    # CRF
     if crf is True:
-        d = dcrf.DenseCRF2D(img.shape[1], img.shape[0], cfg.class_num)
+        d = dcrf.DenseCRF2D(w, h, cfg.class_num)
 
         # set unary potential
         predictions = np.transpose(predictions, (2, 0, 1))
@@ -47,20 +66,12 @@ def predict_one(img_path, predict_func, output_path, crf):
         result = np.reshape(result, (img.shape[0], img.shape[1]))
     else:
         result = np.argmax(predictions, axis=2)
-
-    if cfg.class_num == 2:
-        result = (1 - result) * 255
-        mask = np.zeros(img.shape)
-        mask[:,:,0] = result
-        output = img * 0.7 + mask * 0.3
-        misc.imsave(output_path, output)
-    else:
-        (height, width, _) = img.shape
-        output = np.zeros((height,width))
-        for h in range(height):
-            for w in range(width):
-                output[h, w] = 1.0 * result[h, w] / (cfg.class_num - 1)
-        misc.imsave(output_path, output)
+    result = (1 - result) * 255
+    mask = np.zeros(img.shape)
+    mask[:,:,0] = result
+    output = img * 0.7 + mask * 0.3
+    output = np.resize(output, [output.shape[0], output.shape[1]])
+    return output
     
 
 def predict(args):
@@ -75,7 +86,7 @@ def predict(args):
 
     if os.path.isfile(args.input):
         # input is a file
-        predict_one(args.input, predict_func, args.output or "output.png", args.crf)
+        newPredict_one(args.input, predict_func, args.output or "output", args.crf)
 
     if os.path.isdir(args.input):
         # input is a directory
@@ -88,7 +99,7 @@ def predict(args):
                 if file_idx % 10 == 0 and file_idx > 0:
                     logger.info(str(file_idx) + "/" + str(len(filenames)))
                 filepath = os.path.join(args.input, filename)
-                predict_one(filepath, predict_func, os.path.join(output_dir, filename), args.crf)
+                newPredict_one(filepath, predict_func, output_dir, args.crf)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

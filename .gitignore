@@ -4,3 +4,5 @@
 train_log
 data_*
 *.png
+data
+raw_data

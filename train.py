@@ -16,7 +16,7 @@ from tensorpack.tfutils.summary import *
 from reader import Data
 from cfgs.config import cfg
 
-BATCH_SIZE = 8
+BATCH_SIZE = cfg.batch_size
 
 class Model(ModelDesc):
     def __init__(self):
@@ -24,7 +24,7 @@ class Model(ModelDesc):
         self.channels.append(cfg.class_num)
 
     def _get_inputs(self):
-        return [InputDesc(tf.float32, [None, None, None, 3], 'input'),
+        return [InputDesc(tf.float32, [None, None, None, 1], 'input'),
                 InputDesc(tf.int32, [None, None], 'label')
                ]
 
@@ -112,22 +112,13 @@ class Model(ModelDesc):
 
 def get_data(train_or_test):
     isTrain = train_or_test == 'train'
-    ds = Data(train_or_test, affine_trans=isTrain, hflip=isTrain, warp=isTrain)
+    ds = Data(train_or_test, affine_trans=isTrain, hflip=False, warp=isTrain)
     if isTrain:
         augmentors = [
             imgaug.RandomOrderAug(
                 [imgaug.Brightness(30, clip=False),
                  imgaug.Contrast((0.8, 1.2), clip=False),
-                 imgaug.Saturation(0.4),
-                 # rgb-bgr conversion
-                 imgaug.Lighting(0.1,
-                                 eigval=[0.2175, 0.0188, 0.0045][::-1],
-                                 eigvec=np.array(
-                                     [[-0.5675, 0.7192, 0.4009],
-                                      [-0.5808, -0.0045, -0.8140],
-                                      [-0.5836, -0.6948, 0.4203]],
-                                     dtype='float32')[::-1, ::-1]
-                                 )]),
+                 ]),
         ]
     else:
         augmentors = []
@@ -145,30 +136,27 @@ def get_config(ds_train, ds_test):
             ModelSaver(),
             InferenceRunner(ds_test,
                 [ScalarStats('cost')]),
-            ScheduledHyperParamSetter('learning_rate',
-                                      [(1, 1e-1),
-                                       (50, 3e-2),
-                                       (100, 1e-2)]),
+            ScheduledHyperParamSetter('learning_rate',cfg.learning_rate),
             HumanHyperParamSetter('learning_rate'),
         ],
         model=Model(),
-        max_epoch=150,
+        max_epoch=cfg.max_epoch,
     )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.', default=0)
+    parser.add_argument('--gpu', help='comma separated list of GPU(s) to use.', default='0,1')
     parser.add_argument('--load', help='load model')
     args = parser.parse_args()
-    if args.gpu:
-        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
-
     logger.auto_set_dir()
     ds_train = get_data("train")
     ds_test = get_data("test")
-
     config = get_config(ds_train, ds_test)
+    if args.gpu:
+        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+        NR_GPU = len(args.gpu.split(','))
+        BATCH_SIZE = BATCH_SIZE // NR_GPU
+        config.nr_tower = NR_GPU
     if args.load:
         config.session_init = SaverRestore(args.load)
-    QueueInputTrainer(config).train()
-
+    AsyncMultiGPUTrainer(config).train()

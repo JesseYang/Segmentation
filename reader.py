@@ -27,7 +27,7 @@ def get_imglist(fname):
     return content
 
 def read_data(img_path, label_path, affine_trans=False, hflip=False, scale_x=1.0, scale_y=1.0, warp_ratio=0):
-    img = misc.imread(img_path, mode='RGB')
+    img = misc.imread(img_path, mode='L')
     f = open(label_path, "rb")
     binary_data = f.read()
     label = []
@@ -37,7 +37,7 @@ def read_data(img_path, label_path, affine_trans=False, hflip=False, scale_x=1.0
     label = np.array(label, dtype=np.uint8)
 
     # affine
-    h, w, c = img.shape
+    h, w = img.shape
     label = np.reshape(label, (h, w))
 
     if warp_ratio > 0 and np.random.rand() <= warp_ratio:
@@ -64,8 +64,10 @@ def read_data(img_path, label_path, affine_trans=False, hflip=False, scale_x=1.0
         img = cv2.flip(img, flipCode=1)
         label = cv2.flip(label, flipCode=1)
 
-    h, w, c = img.shape
+    h, w  = img.shape
     label = np.reshape(label, (h * w))
+
+    img = np.expand_dims(img, axis=3)
 
     return [img, label]
 
@@ -98,7 +100,7 @@ class Data(RNGDataFlow):
             self.scale_y = (np.random.uniform() - 0.5) / 4 + 1
         for k in idxs:
             img_path = self.imglist[k]
-            label_path = img_path.replace('image', 'label').replace('png', 'dat')
+            label_path = img_path.replace('image', 'label').replace('jpg', 'dat')
             yield read_data(img_path, label_path, self.affine_trans, self.hflip, self.scale_x, self.scale_y, self.warp_ratio)
 
 if __name__ == '__main__':
