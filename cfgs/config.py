@@ -1,1 +1,1 @@
-from .config_koala import cfg
+from .config_goose import cfg

@@ -34,40 +34,25 @@ class Model(ModelDesc):
         tf.summary.image('input-image', image, max_outputs=5)
         l = image / 255.0 * 2 - 1
 
-        #================================
-        # Modified Dilated CNN Part
-        #================================
-        def shortcut(l, n_in, n_out, stride):
-            if n_in != n_out:
-                return Conv2D('convshortcut', l, n_out, (1,1),'SAME', stride=stride)
-            else:
-                return l
-
         with tf.variable_scope('segmentation') as scope:
             for layer_idx, dilation in enumerate(cfg.dilations):
-                with tf.variable_scope('layer%d'%layer_idx):
-                    # Except first layer, do BNReLU on input
-                    out_channel = cfg.channels[layer_idx]
-                    kernel_width = cfg.kernel_size[layer_idx]
-                    ch_in = l.get_shape().as_list()[-1]
-                    input = l
-                    if dilation == 1:
-                        l = Conv2D('conv.{}'.format(layer_idx),
-                                l,
-                                self.channels[layer_idx],
-                                (cfg.kernel_size[layer_idx], cfg.kernel_size[layer_idx]),
-                                'SAME',
-                                use_bias=not cfg.with_bn)
-                    else:
-                        l = AtrousConv2D('atrous_conv.{}'.format(layer_idx),
-                                        l,
-                                        dilation,
-                                        self.channels[layer_idx],
-                                        (cfg.kernel_size[layer_idx], cfg.kernel_size[layer_idx]),
-                                        'SAME',
-                                        use_bias=not cfg.with_bn,
-                                        mannual_atrous=False)
-                    l = l + shortcut(input, ch_in, out_channel, 1)
+                layer_input = tf.identity(l)
+                if dilation == 1:
+                    l = Conv2D('conv.{}'.format(layer_idx),
+                               l,
+                               self.channels[layer_idx],
+                               (cfg.kernel_size[layer_idx], cfg.kernel_size[layer_idx]),
+                               'SAME',
+                               use_bias=not cfg.with_bn)
+                else:
+                    l = AtrousConv2D('atrous_conv.{}'.format(layer_idx),
+                                     l,
+                                     dilation,
+                                     self.channels[layer_idx],
+                                     (cfg.kernel_size[layer_idx], cfg.kernel_size[layer_idx]),
+                                     'SAME',
+                                     use_bias=not cfg.with_bn,
+                                     mannual_atrous=False)
 
                 if cfg.with_bn == True:
                     l = BatchNorm('bn.{}'.format(layer_idx), l)

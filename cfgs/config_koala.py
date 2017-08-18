@@ -5,6 +5,8 @@ cfg = edict()
 
 cfg.name = 'koala'
 
+cfg.hflip = False
+
 # class_num should include background
 cfg.class_num = 9
 

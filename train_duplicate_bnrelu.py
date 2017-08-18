@@ -50,7 +50,13 @@ class Model(ModelDesc):
                     out_channel = cfg.channels[layer_idx]
                     kernel_width = cfg.kernel_size[layer_idx]
                     ch_in = l.get_shape().as_list()[-1]
-                    input = l
+                    if layer_idx == 0:
+                        input = l
+                    else:
+                        if cfg.with_bn:
+                            l = BatchNorm('bn.{}'.format(layer_idx), l)
+                        l = tf.clip_by_value(l, 0, 20, "clipped_relu.{}".format(layer_idx))
+                        input = l
                     if dilation == 1:
                         l = Conv2D('conv.{}'.format(layer_idx),
                                 l,

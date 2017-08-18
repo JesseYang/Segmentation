@@ -10,6 +10,7 @@ from scipy import misc
 import argparse
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import unary_from_labels, unary_from_softmax, create_pairwise_bilateral, create_pairwise_gaussian
+import ntpath
 
 from tensorpack import *
 
@@ -74,8 +75,18 @@ def predict(args):
     predict_func = OfflinePredictor(predict_config)
 
     if os.path.isfile(args.input):
-        # input is a file
-        predict_one(args.input, predict_func, args.output or "output.png", args.crf)
+        if args.input.endswith("txt"):
+            # input is an text file
+            with open(args.input) as f:
+                records = f.readlines()
+            records = [e.strip() for e in records]
+            output_dir = args.output or "output"
+            for record in records:
+                filename = ntpath.basename(record)
+                predict_one(record, predict_func, os.path.join(output_dir, filename), args.crf)
+        else:
+            # input is an image file
+            predict_one(args.input, predict_func, args.output or "output.png", args.crf)
 
     if os.path.isdir(args.input):
         # input is a directory
