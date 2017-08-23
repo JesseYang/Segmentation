@@ -16,6 +16,7 @@ from tensorpack import *
 
 from train import Model
 from cfgs.config import cfg
+import time
 
 def predict_one(img_path, predict_func, output_path, crf):
     img = misc.imread(img_path)
@@ -81,9 +82,13 @@ def predict(args):
                 records = f.readlines()
             records = [e.strip() for e in records]
             output_dir = args.output or "output"
+            time_records = []
             for record in records:
                 filename = ntpath.basename(record)
+                START = time.time()
                 predict_one(record, predict_func, os.path.join(output_dir, filename), args.crf)
+                END = time.time()
+                time_records.append(END-START)
         else:
             # input is an image file
             predict_one(args.input, predict_func, args.output or "output.png", args.crf)
@@ -100,6 +105,9 @@ def predict(args):
                     logger.info(str(file_idx) + "/" + str(len(filenames)))
                 filepath = os.path.join(args.input, filename)
                 predict_one(filepath, predict_func, os.path.join(output_dir, filename), args.crf)
+    
+    for i in range(len(time_records)):
+        print('No.%d cost %fs.'%(i,time_records[i]))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

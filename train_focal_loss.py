@@ -18,6 +18,11 @@ from cfgs.config import cfg
 
 BATCH_SIZE = 8
 
+def focal_loss(y, probs, gama):
+    focal_loss = -tf.reduce_sum(y * ((1.0 - probs) ** gama) * tf.log(probs))
+
+    return focal_loss
+
 class Model(ModelDesc):
     def __init__(self):
         self.channels = cfg.channels
@@ -25,7 +30,7 @@ class Model(ModelDesc):
 
     def _get_inputs(self):
         return [InputDesc(tf.float32, [None, None, None, 3], 'input'),
-                InputDesc(tf.int32, [None, None], 'label')
+                InputDesc(tf.int32, [None, None, None], 'label')
                ]
 
     def _build_graph(self, input_vars):
@@ -83,15 +88,14 @@ class Model(ModelDesc):
             label_indicator = tf.greater(label, -1)
             effective_label = tf.boolean_mask(tensor=label,
                                             mask=label_indicator)
-            print('effective_label', effective_label)
+
             output = tf.reshape(output, [BATCH_SIZE, -1, cfg.class_num])
             effective_output = tf.boolean_mask(tensor=output,
                                             mask=label_indicator)
-            print('effective_output:', effective_output)
-            cost = tf.nn.sparse_softmax_cross_entropy_with_logits(
-                logits=effective_output,
-                labels=effective_label)
-            cost = tf.reduce_mean(cost, name='cross_entropy_loss')
+
+        
+            cost = focal_loss(effective_label, effective_output, 2)
+            # cost = tf.reduce_mean(cost, name='cross_entropy_loss')
 
             wrong = prediction_incorrect(effective_output, effective_label)
             # monitor training error
