@@ -3,4 +3,7 @@
 *.txt
 train_log
 data_*
+*test*
+*output*
 *.png
+*.jpg
